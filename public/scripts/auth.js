@@ -57,16 +57,28 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Signup form listener attached');
     }
 
+    // FIX: Attach listener cho login form (MỚI: Ngăn reload và gọi loginWithEmail)
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();  // Ngăn reload trang
+            await loginWithEmail();  // Gọi hàm login
+        });
+        console.log('✅ Login form listener attached');
+    }
+
+    // FIX: Clear error on focus input (UX: Xóa lỗi khi user bắt đầu nhập lại)
     const inputs = document.querySelectorAll('.login-container input');
     inputs.forEach(input => {
         input.addEventListener('focus', () => {
             const inputId = input.id;
             const errorEl = document.getElementById(`${inputId}Error`);
             if (errorEl) {
-                displayError(inputId, null);  
+                displayError(inputId, null);  // Clear error
             }
         });
     });
+    console.log('✅ Clear error on focus attached for inputs');
 });
 
 function displayError(inputId, message) {
@@ -231,6 +243,7 @@ async function loginWithEmail() {
     }
 
     try {
+        console.log('🔄 Starting signInWithPassword for', email);  // FIX: Log start
         const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
@@ -243,42 +256,70 @@ async function loginWithEmail() {
             return;
         }
 
+        console.log('✅ signIn success, user:', user.email);  // FIX: Log sau signIn
+
         // FIX: Check email confirmed
-        if (user && !user.email_confirmed_at) {
+        console.log('🔍 Checking email confirmed...');  // Log before check
+        if (user && user.app_metadata?.provider === 'email' && !user.email_confirmed_at) {
+            console.log('❌ Email not confirmed');  // Log fail
             alert('Email chưa xác nhận! Vui lòng kiểm tra mail và click link xác nhận.');
-            // Không redirect, quay về form
             return;
         }
+        console.log('✅ Email confirmed OK');  // Log success
 
-        console.log('Login success – checking users table');
+        console.log('Login success – checking users table');  // Log gốc
 
-        // FIX: Upsert users sau login (nếu chưa có, lấy từ metadata hoặc default)
-        const { data: profile, error: selectError } = await supabase
-            .from('users')
-            .select('username, birthday')
-            .eq('id', user.id)
-            .single();
+        // FIX: Upsert users sau login (với timeout 5s để tránh hang)
+        console.log('🔍 Starting select profile...');  // Log before select
+        let profile = null;
+        try {
+            const selectPromise = supabase
+                .from('users')
+                .select('username, birthday, avatar_url')
+                .eq('id', user.id)
+                .single()
+                .timeout(5000);  // FIX: Timeout 5s
+
+            const { data: selectData, error: selectError } = await selectPromise;
+            profile = selectData;
+            if (selectError && selectError.code !== 'PGRST116') {
+                console.error('Select profile error:', selectError);
+            }
+            console.log('✅ Select profile done, data:', profile ? 'exists' : 'null');  // Log after
+        } catch (selectTimeout) {
+            console.warn('Select profile timeout:', selectTimeout);
+            profile = null;  // Fallback
+        }
 
         let username = profile?.username || user.user_metadata?.username || email.split('@')[0];
         let birthday = profile?.birthday || user.user_metadata?.birthday || null;
 
-        const { error: upsertError } = await supabase
-            .from('users')
-            .upsert({
-                id: user.id,
-                email: user.email,
-                username: username,
-                birthday: birthday,
-                avatar_url: profile?.avatar_url || null,
-                updated_at: new Date().toISOString()
-            });
+        console.log('🔍 Starting upsert users...');  // Log before upsert
+        try {
+            const upsertPromise = supabase
+                .from('users')
+                .upsert({
+                    id: user.id,
+                    email: user.email,
+                    username: username,
+                    birthday: birthday,
+                    avatar_url: profile?.avatar_url || null,
+                    updated_at: new Date().toISOString()
+                })
+                .timeout(5000);  // FIX: Timeout 5s
 
-        if (upsertError) {
-            console.error('Upsert after login error:', upsertError);  // Log để debug RLS
-        } else {
-            console.log('✅ Users table synced after login');
+            const { error: upsertError } = await upsertPromise;
+            if (upsertError) {
+                console.error('Upsert after login error:', upsertError);
+            } else {
+                console.log('✅ Users table synced after login');
+            }
+            console.log('✅ Upsert done');  // Log after
+        } catch (upsertTimeout) {
+            console.warn('Upsert timeout:', upsertTimeout);
         }
 
+        // FIX: Fallback redirect ngay cả nếu upsert fail/timeout
         console.log('Login success – redirecting to player.html');
         window.location.href = '/player.html'; 
 
@@ -313,13 +354,41 @@ async function loginWithGoogle() {
 
 async function logout() {
     try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        
-        window.location.href = '/index.html'; 
+        console.log('🔄 Starting logout...');
+
+        // Clear Supabase session
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+            console.error('SignOut error:', signOutError);
+            // Không throw, vẫn clear local để fallback
+        } else {
+            console.log('✅ Supabase signOut success');
+        }
+
+        // FIX: Clear localStorage (Supabase session persist)
+        localStorage.removeItem('supabase.auth.token');
+        console.log('✅ LocalStorage cleared');
+
+        // FIX: Clear window globals (sync với app.js cache)
+        if (window.cachedPlaylists) window.cachedPlaylists = null;
+        if (window.cachedHistoryTracks) window.cachedHistoryTracks = null;
+        if (window.cachedRecommendedTracks) window.cachedRecommendedTracks = null;
+        if (window.cachedProfile) window.cachedProfile = null;
+        if (window.cachedPlaylistTracks) window.cachedPlaylistTracks = null;
+        if (window.cachedRecommendationsPlaylistId) window.cachedRecommendationsPlaylistId = null;
+        window.userSessionLoaded = false;  // Reset session flag
+
+        console.log('✅ All caches cleared');
+
+        // Redirect sau clear
+        window.location.href = '/index.html';
+        console.log('🔄 Redirecting to index.html');
+
     } catch (error) {
-        console.error('Lỗi đăng xuất:', error);
-        alert('Đăng xuất thất bại: ' + error.message);
+        console.error('Lỗi hệ thống logout:', error);
+        // Fallback: Clear local và redirect dù sao
+        localStorage.removeItem('supabase.auth.token');
+        window.location.href = '/index.html';
     }
 }
 

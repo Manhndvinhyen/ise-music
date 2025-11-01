@@ -15,7 +15,11 @@ yarn-error.log*
 *.key
 *api.key
 *secret*
-groq_api_key.txt  # Từ ui.js line 272
+GROQ_API_KEY
+supabaseUrl
+supabaseKey
+
+
 
 # Logs
 logs

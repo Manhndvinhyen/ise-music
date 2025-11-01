@@ -5,5 +5,5 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 // Sửa thành cách này:
 const supabase = createClient(supabaseUrl, supabaseKey)
-
+window.supabase = supabase;  
 export { supabase }

@@ -4,7 +4,7 @@
 
 /* 1. Thiết lập trang */
 body {
-    display: flex;
+    display: flex !important;
     justify-content: center; /* Căn giữa ngang */
     align-items: center; /* Căn giữa dọc */
     height: 100vh; /* Chiếm toàn bộ màn hình */
