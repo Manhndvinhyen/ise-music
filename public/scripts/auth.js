@@ -1,6 +1,7 @@
 import { supabase } from '../supabase/client.js';
 
 console.log('📄 Script loaded:', window.location.href);
+
 // Kiểm tra đăng nhập
 document.addEventListener('DOMContentLoaded', function() {
     const currentPath = window.location.pathname;
@@ -23,22 +24,60 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Auth check error:', error);
         });
     }
+
+    // Parse OAuth callback token từ URL hash
+    const urlHash = window.location.hash.substring(1);
+    if (urlHash) {
+        const params = new URLSearchParams(urlHash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (accessToken && refreshToken) {
+            supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+            }).then(({ data: { session }, error }) => {
+                if (error) {
+                    console.error('Set session error:', error);
+                } else {
+                    console.log('Session set from callback:', session.user.email);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    window.location.href = '/player.html';
+                }
+            });
+        }
+    }
+
+    // FIX: Attach listener cho signup form
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();  // Ngăn reload form
+            await signup();
+        });
+        console.log('✅ Signup form listener attached');
+    }
+
+    const inputs = document.querySelectorAll('.login-container input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            const inputId = input.id;
+            const errorEl = document.getElementById(`${inputId}Error`);
+            if (errorEl) {
+                displayError(inputId, null);  
+            }
+        });
+    });
 });
 
-
 function displayError(inputId, message) {
-    // Xóa tất cả lỗi trước khi hiển thị lỗi mới (hoặc xóa lỗi)
     const errorElement = document.getElementById(`${inputId}Error`);
     const inputElement = document.getElementById(inputId);
 
-    // KHI GỌI displayError, CHỈ XỬ LÝ LỖI CỦA TRƯỜNG HIỆN TẠI
     if (errorElement && inputElement) {
-        // 1. Reset trạng thái
         errorElement.textContent = '';
         errorElement.classList.remove('active');
         inputElement.classList.remove('error');
 
-        // 2. Thiết lập trạng thái mới (nếu có message)
         if (message) {
             errorElement.textContent = message;
             errorElement.classList.add('active');
@@ -47,16 +86,12 @@ function displayError(inputId, message) {
     }
 }
 
-// Kiểm tra định dạng Email cơ bản
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
-// Kiểm tra định dạng Mật khẩu: 8+ ký tự, bao gồm hoa, thường, số, ký tự đặc biệt
 function isValidPassword(password) {
-    const minLength = 8;
-    // Regex: (?=.*[a-z]) (chữ thường), (?=.*[A-Z]) (chữ hoa), (?=.*\d) (số), (?=.*[\W_]) (ký tự đặc biệt)
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return passwordRegex.test(password);
 }
@@ -75,53 +110,45 @@ async function signup() {
     displayError('confirmPassword', null);
     displayError('signupBirthday', null);
 
-    let hasClientError = false;
+    let hasError = false;
 
-    // 1. Kiểm tra trường bắt buộc
-    if (!username) { displayError('signupUsername', 'Vui lòng nhập Tên người dùng.'); hasClientError = true; }
-    if (!email) { displayError('signupEmail', 'Vui lòng nhập Email.'); hasClientError = true; } 
-    else if (!isValidEmail(email)) { displayError('signupEmail', 'Định dạng Email không hợp lệ.'); hasClientError = true; }
+    if (!username) { 
+        displayError('signupUsername', 'Vui lòng nhập Tên người dùng.'); 
+        hasError = true; 
+    }
+    if (!email) { 
+        displayError('signupEmail', 'Vui lòng nhập Email.'); 
+        hasError = true; 
+    } else if (!isValidEmail(email)) { 
+        displayError('signupEmail', 'Định dạng Email không hợp lệ.'); 
+        hasError = true; 
+    }
     
-    if (!password) { displayError('signupPassword', 'Vui lòng nhập Mật khẩu.'); hasClientError = true; }
-    else if (!isValidPassword(password)) { 
+    if (!password) { 
+        displayError('signupPassword', 'Vui lòng nhập Mật khẩu.'); 
+        hasError = true; 
+    } else if (!isValidPassword(password)) { 
         displayError('signupPassword', 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.'); 
-        hasClientError = true; 
+        hasError = true; 
     }
     
-    if (!confirmPassword) { displayError('confirmPassword', 'Vui lòng nhập lại Mật khẩu.'); hasClientError = true; }
-    else if (password !== confirmPassword) {
-        displayError('confirmPassword', 'Mật khẩu xác nhận không khớp.');
-        hasClientError = true;
+    if (!confirmPassword) { 
+        displayError('confirmPassword', 'Vui lòng nhập lại Mật khẩu.'); 
+        hasError = true; 
+    } else if (password !== confirmPassword) {
+        displayError('confirmPassword', 'Mật khẩu xác nhận không khớp.'); 
+        hasError = true; 
     }
     
-    if (!birthday) { displayError('signupBirthday', 'Vui lòng nhập Ngày sinh.'); hasClientError = true; }
-    
-    if (hasClientError) return;
-
-    // 2. Kiểm tra Mật khẩu và Xác nhận
-    if (password !== confirmPassword) {
-        displayError('confirmPassword', 'Mật khẩu xác nhận không khớp.');
-        hasError = true;
+    if (!birthday) { 
+        displayError('signupBirthday', 'Vui lòng nhập Ngày sinh.'); 
+        hasError = true; 
     }
     
-    // 3. Kiểm tra Định dạng Email
-    if (!isValidEmail(email)) {
-        displayError('signupEmail', 'Định dạng Email không hợp lệ.');
-        hasError = true;
-    }
-    
-    // 4. Kiểm tra Độ mạnh Mật khẩu
-    if (!isValidPassword(password)) {
-        displayError('signupPassword', 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.');
-        hasError = true;
-    }
-
     if (hasError) return;
 
-
     try {
-        // 5. Kiểm tra Tên người dùng trùng lặp trong DB
-        // GIẢ ĐỊNH: Bạn có bảng 'users' với cột 'username' (tham chiếu từ image_c13d59.png)
+        // Kiểm tra username trùng lặp
         const { count: usernameCount, error: usernameCheckError } = await supabase
             .from('users')
             .select('username', { count: 'exact' })
@@ -131,23 +158,23 @@ async function signup() {
 
         if (usernameCount > 0) {
             displayError('signupUsername', 'Tên người dùng này đã tồn tại.');
-            return; // Thoát vì lỗi trùng lặp (server error)
+            return;
         }
 
-        // 6. Thực hiện Đăng ký qua Supabase (Supabase sẽ kiểm tra trùng lặp Email)
+        // Signup
         const { data, error } = await supabase.auth.signUp({ 
             email, 
             password,
             options: {
                 data: {
-                    username: username, // Lưu tên đăng nhập vào user metadata
+                    username: username,
                     birthday: birthday
                 }
             }
         });
 
         if (error) {
-            // Supabase trả về lỗi trùng lặp Email hoặc lỗi khác
+            console.error('Signup error:', error);
             if (error.message.includes('already registered')) {
                 displayError('signupEmail', 'Email này đã được đăng ký.');
             } else {
@@ -156,19 +183,38 @@ async function signup() {
             return;
         }
 
-        if (data.user && data.user.identities && data.user.identities.length === 0) {
-            alert('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.');
-            window.location.href = '/index.html';
+        console.log('Signup success:', data.user.email);
+
+        // FIX: Upsert vào bảng users ngay lập tức
+        const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+                id: data.user.id,
+                email: email,
+                username: username,
+                birthday: birthday,
+                avatar_url: null,  // Default
+                updated_at: new Date().toISOString()
+            });
+
+        if (upsertError) {
+            console.error('Upsert users error:', upsertError);  // Log để debug RLS
+            // Không throw, vẫn coi signup success
         } else {
-            window.location.href = '/player.html';
+            console.log('✅ Users table populated');
         }
+
+        // FIX: KHÔNG auto signIn (vì email confirmation enabled) - alert và redirect
+        alert('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận và đăng nhập.');
+        window.location.href = '/index.html';
+        return;  // Dừng, không fallback
 
     } catch (error) {
         console.error('Lỗi hệ thống khi đăng ký:', error);
+        console.error('Exact error:', error.message);
         displayError('signupEmail', `Lỗi hệ thống: ${error.message}`);
     }
 }
-
 
 async function loginWithEmail() {
     const email = document.getElementById('loginEmail').value;
@@ -179,17 +225,16 @@ async function loginWithEmail() {
     displayError('loginPassword', null);
 
     if (!email || !password) {
-        // Hiển thị lỗi ngay dưới ô thiếu thông tin
         if (!email) displayError('loginEmail', 'Vui lòng nhập Email.');
         if (!password) displayError('loginPassword', 'Vui lòng nhập Mật khẩu.');
         return;
     }
 
     try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            // Thay thế alert() bằng thông báo lỗi cụ thể
+            console.error('Login error:', error);
             if (error.message.includes('Invalid login credentials')) {
                 displayError('loginPassword', 'Email hoặc mật khẩu không chính xác.');
             } else {
@@ -198,14 +243,51 @@ async function loginWithEmail() {
             return;
         }
 
-        // Đăng nhập thành công
+        // FIX: Check email confirmed
+        if (user && !user.email_confirmed_at) {
+            alert('Email chưa xác nhận! Vui lòng kiểm tra mail và click link xác nhận.');
+            // Không redirect, quay về form
+            return;
+        }
+
+        console.log('Login success – checking users table');
+
+        // FIX: Upsert users sau login (nếu chưa có, lấy từ metadata hoặc default)
+        const { data: profile, error: selectError } = await supabase
+            .from('users')
+            .select('username, birthday')
+            .eq('id', user.id)
+            .single();
+
+        let username = profile?.username || user.user_metadata?.username || email.split('@')[0];
+        let birthday = profile?.birthday || user.user_metadata?.birthday || null;
+
+        const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                username: username,
+                birthday: birthday,
+                avatar_url: profile?.avatar_url || null,
+                updated_at: new Date().toISOString()
+            });
+
+        if (upsertError) {
+            console.error('Upsert after login error:', upsertError);  // Log để debug RLS
+        } else {
+            console.log('✅ Users table synced after login');
+        }
+
+        console.log('Login success – redirecting to player.html');
         window.location.href = '/player.html'; 
 
     } catch (error) {
+        console.error('Lỗi hệ thống:', error);
         displayError('loginPassword', `Lỗi hệ thống: ${error.message}`);
     }
-};
-// Đăng nhập bằng Google
+}
+
 async function loginWithGoogle() {
     console.log('Login with Google called');
     
@@ -213,28 +295,27 @@ async function loginWithGoogle() {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/player.html`
+                redirectTo: `${window.location.origin}/player.html`  // Redirect sau OAuth
             }
         });
 
         if (error) throw error;
+        console.log('Google OAuth initiated:', data);
+
+        // FIX: Note - Upsert users sẽ xử lý ở app.js sau setSession, sử dụng user_metadata từ Google
+        // (e.g., username = user.user_metadata.full_name, birthday = null)
+
     } catch (error) {
-        alert('Lỗi đăng nhập Google: ' + error.message);
         console.error('Google login error:', error);
+        alert('Lỗi đăng nhập Google: ' + error.message);
     }
 }
-
-// window.signup = signup;
-// window.loginWithEmail = loginWithEmail;
-// window.loginWithGoogle = loginWithGoogle;
-
 
 async function logout() {
     try {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
         
-        // Chuyển về trang đăng nhập
         window.location.href = '/index.html'; 
     } catch (error) {
         console.error('Lỗi đăng xuất:', error);

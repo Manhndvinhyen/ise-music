@@ -9,17 +9,24 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="/scripts/auth.js"></script>
 </head>
-<body class="dark-theme">  <!-- Thêm class dark -->
-  <div class="login-container">  <!-- Centered wrapper -->
+<body class="dark-theme">  
+  <div class="login-container">
     <h2>🔐 Đăng nhập để sử dụng ứng dụng</h2>
-    <input type="email" id="loginEmail" placeholder="Email" />
-    <div id="loginEmailError" class="error-message"></div>
+    <form id="loginForm"> 
+      <div class="input-group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="Nhập email" />
+        <div id="loginEmailError" class="error-message"></div>
+      </div>
 
-    <input type="password" id="loginPassword" placeholder="Mật khẩu" />
-    <div id="loginPasswordError" class="error-message"></div>
+      <div class="input-group">
+        <label for="loginPassword">Mật khẩu</label>
+        <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" />
+        <div id="loginPasswordError" class="error-message"></div>
+      </div>
 
-    <button onclick="authFunctions.loginWithEmail()">Đăng nhập</button>
-    
+      <button type="submit">Đăng nhập</button>
+    </form>
     <hr />
     
     <div class="social-buttons">

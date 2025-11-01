@@ -16,12 +16,12 @@ body {
 
 /* 2. Container Đăng nhập/Đăng ký */
 .login-container {
-    background-color: var(--card-bg-darker); /* Nền hơi tối cho form */
+    background-color: var(--card-bg-darker); 
     padding: 40px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Tạo bóng đổ */
     width: 100%;
-    max-width: 400px; /* Giới hạn chiều rộng form */
+    max-width: 400px; 
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -31,12 +31,27 @@ body {
     color: var(--text-primary);
     text-align: center;
     margin-bottom: 20px;
-    border-bottom: none; /* Loại bỏ đường phân cách dưới h2 của base.css */
+    border-bottom: none;
 }
 
-/* 3. Định dạng Input */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.input-group label {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
 .login-container input[type="email"],
-.login-container input[type="password"] {
+.login-container input[type="password"],
+.login-container input[type="text"],
+.login-container input[type="date"] {
     width: 100%; 
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -47,12 +62,10 @@ body {
 }
 
 .login-container input[type="date"] {
-    /* Quan trọng: Reset kiểu dáng mặc định của trình duyệt */
     -webkit-appearance: none; 
     -moz-appearance: none;
     appearance: none;
-    
-    /* Áp dụng lại các kiểu dáng đã định nghĩa cho input */
+
     width: 100%; 
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -112,25 +125,54 @@ body {
 
 /* 7. Thông báo lỗi */
 .error-message {
-    color: var(--danger-color, #f44336); /* Màu đỏ */
-    font-size: 0.9em;
-    margin-top: -10px; /* Đẩy sát lên input phía trên */
-    margin-bottom: 5px; 
+    color: var(--danger-color, #f44336);
+    font-size: 0.85em;  
+    margin-top: 0;  
+    margin-bottom: 8px;
     padding-left: 5px;
-    height: 18px; /* Giữ chỗ để tránh giao diện bị nhảy khi lỗi xuất hiện */
+    min-height: 20px;  
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;  
+    overflow: visible;
+    max-height: 0;
+    width: 100%;
+    word-wrap:break-word;
+    word-break:break-word;
+    white-space: normal;
+    line-height: 1.3;
+    box-sizing: border-box;
 }
 
 .error-message.active {
     opacity: 1;
+    max-height: 30px;
 }
 
 .error-message.active::before {
-    content: '* '; /* Thêm dấu * và khoảng trắng */
+    content: '* ';
     font-weight: bold;
 }
 
 .login-container input.error {
     border-color: var(--danger-color, #f44336) !important;
+    background-color: rgba(244, 67, 54, 0.05);
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 20px;  /* Giảm padding từ 40px để fit mobile */
+        margin: 10px;  /* Thêm margin ngoài để tránh sát cạnh */
+        max-width: none;  /* Full width trên mobile */
+        width: calc(100% - 20px);  /* Trừ margin */
+    }
+
+    .error-message {
+        font-size: 0.8em;  /* Nhỏ hơn trên mobile */
+        padding: 2px 5px;  /* Giảm padding */
+        max-height: 80px;  /* Tăng để chứa text dài wrap */
+    }
+
+    .input-group label {
+        font-size: 0.85em;  /* Label nhỏ hơn để tiết kiệm space */
+    }
 }

@@ -1,33 +1,48 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>ChatMusic - Đăng Ký</title>
-  <link rel="stylesheet" href="/styles/base.css" />
-  <link rel="stylesheet" href="/styles/auth.css" />
-  <link rel="stylesheet" href="/styles/theme.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="/scripts/auth.js"></script>
+  <meta charset="UTF-8" />
+  <title>ChatMusic - Đăng Ký</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/auth.css" />
+  <link rel="stylesheet" href="/styles/theme.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="/scripts/auth.js"></script>
 </head>
 <body class="dark-theme">
-  <div class="login-container">  
-    <h2>🆕 Tạo tài khoản</h2>
-    
+   <div class="login-container">
+   <h2>🆕 Tạo tài khoản</h2>
+
     <form id="signupForm"> 
-        <input type="text" id="signupUsername" placeholder="Tên người dùng" />
-        <div id="signupUsernameError" class="error-message"></div>
+        <div class="input-group">
+          <label for="signupUsername">Tên người dùng</label>
+          <input type="text" id="signupUsername" placeholder="Nhập tên người dùng" />
+          <div id="signupUsernameError" class="error-message"></div>
+        </div>
 
-        <input type="email" id="signupEmail" placeholder="Email" />
-        <div id="signupEmailError" class="error-message"></div>
+        <div class="input-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" placeholder="Nhập email" />
+          <div id="signupEmailError" class="error-message"></div>
+        </div>
 
-        <input type="password" id="signupPassword" placeholder="Mật khẩu" />
-        <div id="signupPasswordError" class="error-message"></div>
+        <div class="input-group">
+          <label for="signupPassword">Mật khẩu</label>
+          <input type="password" id="signupPassword" placeholder="Nhập mật khẩu" />
+          <div id="signupPasswordError" class="error-message"></div>
+        </div>
 
-        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu" />
-        <div id="confirmPasswordError" class="error-message"></div>
+        <div class="input-group">
+          <label for="confirmPassword">Nhập lại mật khẩu</label>
+          <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu" />
+          <div id="confirmPasswordError" class="error-message"></div>
+        </div>
 
-        <input type="date" id="signupBirthday" />
-        <div id="signupBirthdayError" class="error-message"></div>
+        <div class="input-group">
+          <label for="signupBirthday">Ngày sinh</label>
+          <input type="date" id="signupBirthday" />
+          <div id="signupBirthdayError" class="error-message"></div>
+        </div>
 
         <button type="submit">Tạo tài khoản</button>
     </form>

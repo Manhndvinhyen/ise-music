@@ -2021,6 +2021,30 @@ window.appFunctions.createNewPlaylist = function(trackId) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ← FIX: PARSE OAUTH CALLBACK TOKEN TỪ URL HASH (SAU LOGIN GOOGLE/EMAIL IMPLICIT FLOW)
+    const urlHash = window.location.hash.substring(1);  // #access_token=... → access_token=...
+    if (urlHash) {
+        const params = new URLSearchParams(urlHash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (accessToken && refreshToken) {
+            supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+            }).then(({ data: { session }, error }) => {
+                if (error) {
+                    console.error('Set session error:', error);
+                } else {
+                    console.log('Session set from callback:', session.user.email);
+                    // Clear hash from URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Redirect to main app
+                    window.location.href = '/player.html';
+                }
+            });
+        }
+    }
+
     supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) {
             window.location.href = "/index.html";
@@ -2040,11 +2064,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }).catch(error => console.error(' Auth check error:', error));
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
         const user = session?.user;
         
         if (event === 'SIGNED_IN') {
-            updateProfileDisplay(user); 
+            updateProfileDisplay(user);
             cachedPlaylists = null;
             cachedHistoryTracks = null;
             cachedRecommendedTracks = null;
@@ -2054,26 +2078,98 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.userSessionLoaded = true;
                 resumeRecentTrack(user);
             }
+            
+            // ← FIX: Redirect chỉ nếu ở index.html (giữ nguyên)
+            if (window.location.pathname.includes('index.html')) {
+                window.location.href = '/player.html';
+            }
+
+            // FIX: Upsert users table sau SIGNED_IN (cho cả email & Google) – chỉ chạy nếu user tồn tại
+            if (user) {
+                // Check email confirmed (nếu là email provider) – tránh alert nhầm với Google
+                if (user.app_metadata?.provider === 'email' && !user.email_confirmed_at) {
+                    alert('Email chưa xác nhận! Vui lòng kiểm tra mail và click link xác nhận trước khi sử dụng app.');
+                    // Không redirect nếu chưa confirm, quay về index
+                    if (window.location.pathname.includes('player.html')) {
+                        window.location.href = '/index.html';
+                    }
+                    return;  // Dừng upsert nếu chưa confirm
+                }
+
+                console.log('SIGNED_IN: Syncing users table for', user.email);
+
+                // Lấy existing profile hoặc fallback từ metadata (await ok vì async scope)
+                const { data: profile, error: selectError } = await supabase
+                    .from('users')
+                    .select('username, birthday, avatar_url')
+                    .eq('id', user.id)
+                    .single();
+
+                if (selectError && selectError.code !== 'PGRST116') {  // Ignore "no row" error
+                    console.error('Select profile error:', selectError);
+                }
+
+                // Map data: Ưu tiên existing > metadata > default
+                const username = profile?.username || 
+                                user.user_metadata?.username || 
+                                user.user_metadata?.full_name ||  // Cho Google
+                                user.email?.split('@')[0] || 'User Name';
+                const birthday = profile?.birthday || user.user_metadata?.birthday || null;
+                const avatarUrl = profile?.avatar_url || null;
+
+                // Upsert (await ok vì async scope)
+                const { error: upsertError } = await supabase
+                    .from('users')
+                    .upsert({
+                        id: user.id,
+                        email: user.email,
+                        username: username,
+                        birthday: birthday,
+                        avatar_url: avatarUrl,
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (upsertError) {
+                    console.error('Upsert users error in SIGNED_IN:', upsertError);  // Log để debug RLS/fields
+                    // Không throw, vẫn tiếp tục app (profile sẽ fallback trong updateProfileDisplay)
+                } else {
+                    console.log('✅ Users table synced after SIGNED_IN');
+                    window.cachedProfile = null;  // Invalidate cache để refresh profile
+                }
+            }
         } else if (event === 'SIGNED_OUT') {
-            updateProfileDisplay(null); 
+            updateProfileDisplay(null);
             window.userSessionLoaded = false;
-            if (typeof cachedPlaylists !== 'undefined') cachedPlaylists = null; 
+            if (typeof cachedPlaylists !== 'undefined') cachedPlaylists = null;
             if (typeof cachedHistoryTracks !== 'undefined') cachedHistoryTracks = null;
             if (typeof cachedRecommendedTracks !== 'undefined') cachedRecommendedTracks = null;
             if (typeof cachedProfile !== 'undefined') cachedProfile = null;
-            
+        
             if (typeof window.cachedPlaylistTracks !== 'undefined') window.cachedPlaylistTracks = null;
             if (typeof window.cachedRecommendationsPlaylistId !== 'undefined') window.cachedRecommendationsPlaylistId = null;
-        }
         
+            // ← FIX: Clear localStorage session nếu cần (cho Supabase session persist)
+            localStorage.removeItem('supabase.auth.token');
+        
+            // ← FIX: Redirect nếu không ở index
+            if (window.location.pathname !== '/index.html') {
+                window.location.href = "/index.html";
+            }
+        }
+            
+            if (event === 'SIGNED_OUT' && window.location.pathname !== '/index.html') {
+                window.location.href = "/index.html";
+            }
+        });
+
         if (event === 'SIGNED_OUT' && window.location.pathname !== '/index.html') {
             window.location.href = "/index.html";
         }
-    });
 
+    // ← FIX: Form listener – Sử dụng handleCreatePlaylistSubmit (không handleCreatePlaylist)
     const newPlaylistForm = document.getElementById('newPlaylistForm');
-    if (newPlaylistForm && window.handleCreatePlaylist) {
-        newPlaylistForm.addEventListener('submit', window.handleCreatePlaylist);
+    if (newPlaylistForm && window.handleCreatePlaylistSubmit) {
+        newPlaylistForm.addEventListener('submit', window.handleCreatePlaylistSubmit);
     }
 });
 
