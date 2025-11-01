@@ -1,0 +1,12 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app  # Sync host code cho dev
+      - /app/node_modules  # Anonymous volume để giữ node_modules từ build, tránh override từ host
+    restart: always
+    environment:  # Optional: Nếu có env vars, như Supabase key nếu dùng ở server
+      - NODE_ENV=development

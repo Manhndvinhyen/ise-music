@@ -1,0 +1,63 @@
+# Dependencies / Node Modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets/API Keys (từ lỗi trước)
+*.key
+*api.key
+*secret*
+groq_api_key.txt  # Từ ui.js line 272
+
+# Logs
+logs
+*.log
+
+# Runtime Data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build/Output
+dist/
+build/
+public/build/
+*.min.js
+*.min.css
+
+# Project-Specific (ManhMusic)
+assets/temp/  # File temp upload
+supabase/config.toml  # Nếu có local Supabase config
+
+# Database Dumps
+*.sql
+*.dump
+
+# Ignore Large Files
+*.mp3  # Audio files if large
+*.webm

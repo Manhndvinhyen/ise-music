@@ -1,0 +1,136 @@
+/* ==================================== */
+/* auth.css - Định dạng Trang Đăng nhập/Đăng ký */
+/* ==================================== */
+
+/* 1. Thiết lập trang */
+body {
+    display: flex;
+    justify-content: center; /* Căn giữa ngang */
+    align-items: center; /* Căn giữa dọc */
+    height: 100vh; /* Chiếm toàn bộ màn hình */
+    margin: 0;
+    /* Màu nền được lấy từ theme.css */
+    background-color: var(--background-color); 
+    color: var(--text-primary);
+}
+
+/* 2. Container Đăng nhập/Đăng ký */
+.login-container {
+    background-color: var(--card-bg-darker); /* Nền hơi tối cho form */
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Tạo bóng đổ */
+    width: 100%;
+    max-width: 400px; /* Giới hạn chiều rộng form */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-container h2 {
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: none; /* Loại bỏ đường phân cách dưới h2 của base.css */
+}
+
+/* 3. Định dạng Input */
+.login-container input[type="email"],
+.login-container input[type="password"] {
+    width: 100%; 
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 1em;
+}
+
+.login-container input[type="date"] {
+    /* Quan trọng: Reset kiểu dáng mặc định của trình duyệt */
+    -webkit-appearance: none; 
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Áp dụng lại các kiểu dáng đã định nghĩa cho input */
+    width: 100%; 
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 1em;
+    line-height: normal; 
+}
+
+/* 4. Định dạng Nút Đăng nhập Chính */
+.login-container button:not(.social-btn) {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    font-weight: bold;
+    padding: 12px;
+    width: 100%;
+    margin-top: 5px;
+}
+
+/* 5. Định dạng Nút Mạng xã hội */
+.social-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.social-btn {
+    background-color: #4285f4; /* Màu Google */
+    color: white;
+}
+
+.social-btn.google:hover {
+    background-color: #357ae8;
+}
+
+/* 6. Link Khác */
+.login-container p {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.95em;
+    margin-top: 5px;
+}
+
+.login-container a {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Đường phân cách */
+.login-container hr {
+    border: 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 15px 0;
+}
+
+/* 7. Thông báo lỗi */
+.error-message {
+    color: var(--danger-color, #f44336); /* Màu đỏ */
+    font-size: 0.9em;
+    margin-top: -10px; /* Đẩy sát lên input phía trên */
+    margin-bottom: 5px; 
+    padding-left: 5px;
+    height: 18px; /* Giữ chỗ để tránh giao diện bị nhảy khi lỗi xuất hiện */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.error-message.active {
+    opacity: 1;
+}
+
+.error-message.active::before {
+    content: '* '; /* Thêm dấu * và khoảng trắng */
+    font-weight: bold;
+}
+
+.login-container input.error {
+    border-color: var(--danger-color, #f44336) !important;
+}

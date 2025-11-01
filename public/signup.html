@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatMusic - Đăng Ký</title>
+  <link rel="stylesheet" href="/styles/base.css" />
+  <link rel="stylesheet" href="/styles/auth.css" />
+  <link rel="stylesheet" href="/styles/theme.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="/scripts/auth.js"></script>
+</head>
+<body class="dark-theme">
+  <div class="login-container">  
+    <h2>🆕 Tạo tài khoản</h2>
+    
+    <form id="signupForm"> 
+        <input type="text" id="signupUsername" placeholder="Tên người dùng" />
+        <div id="signupUsernameError" class="error-message"></div>
+
+        <input type="email" id="signupEmail" placeholder="Email" />
+        <div id="signupEmailError" class="error-message"></div>
+
+        <input type="password" id="signupPassword" placeholder="Mật khẩu" />
+        <div id="signupPasswordError" class="error-message"></div>
+
+        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu" />
+        <div id="confirmPasswordError" class="error-message"></div>
+
+        <input type="date" id="signupBirthday" />
+        <div id="signupBirthdayError" class="error-message"></div>
+
+        <button type="submit">Tạo tài khoản</button>
+    </form>
+
+  <div class="social-buttons">
+          <button class="social-btn google" onclick="window.authFunctions.loginWithGoogle()">
+        Đăng ký với Google
+      </button>
+    </div>
+    
+     <p>Đã có tài khoản? <a href="index.html">Đăng nhập</a></p>
+  </div>
+</body>
+</html>
